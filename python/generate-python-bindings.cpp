@@ -27,7 +27,9 @@
 #include "eos/fitting/fitting.hpp"
 #include "eos/fitting/orthographic_camera_estimation_linear.hpp"
 #include "eos/fitting/RenderingParameters.hpp"
+#include "eos/render/utils.hpp"
 #include "eos/render/texture_extraction.hpp"
+#include "eos/render/render.hpp"
 
 #include "opencv2/core/core.hpp"
 
@@ -217,6 +219,12 @@ PYBIND11_PLUGIN(eos) {
 		cv::Mat affine_from_ortho = fitting::get_3x4_affine_camera_matrix(rendering_params, image.cols, image.rows);
 		return render::extract_texture(mesh, affine_from_ortho, image, compute_view_angle, render::TextureInterpolation::NearestNeighbour, isomap_resolution);
 	}, "Extracts the texture of the face from the given image and stores it as isomap (a rectangular texture map).", py::arg("mesh"), py::arg("rendering_params"), py::arg("image"), py::arg("compute_view_angle") = false, py::arg("isomap_resolution") = 512);
+
+    render_module.def("render", [](core::Mesh mesh, glm::tmat4x4<float> model_view_matrix, glm::tmat4x4<float> projection_matrix, int viewport_width, int viewport_height, cv::Mat isomap, bool enable_backface_culling, bool enable_near_clipping, bool enable_far_clipping = true) {
+        //const boost::optional<render::Texture>& texture_opt = texture == dummy ? boost::none : boost::optional<render::Texture>(texture);
+        return render::render(mesh, model_view_matrix, projection_matrix, viewport_width, viewport_height, render::create_mipmapped_texture(isomap), enable_backface_culling, enable_near_clipping, enable_far_clipping);
+    }, "Renders the model with a given texture", py::arg("mesh"), py::arg("model_view_matrix"), py::arg("projection_matrix"), py::arg("viewport_width"), py::arg("viewport_height"), py::arg("isomap"), py::arg("enable_backface_culling") = false, py::arg("enable_near_clipping") = true, py::arg("enable_far_clipping") = true );
+
 
     return eos_module.ptr();
 };
